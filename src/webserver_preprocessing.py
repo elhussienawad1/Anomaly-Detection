@@ -1,31 +1,23 @@
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import (
-    regexp_extract, col, to_timestamp, when, lower, lit
-)
-import sys
-import os
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from pyspark.sql.functions import regexp_extract, col, to_timestamp, when, lower, lit
+from config.schema import WEB_ACCESS_LOG_SCHEMA
+
+os.environ["JAVA_HOME"] = r"C:\Program Files\Java\jdk-17.0.18"
+os.environ["SPARK_HOME"] = r"C:\Users\Noor Tantawy\Downloads\spark_unzipped\spark-4.0.2-bin-hadoop3"
+os.environ["HADOOP_HOME"] = r"C:\Users\Noor Tantawy\Downloads\hadoop"
+os.environ["PATH"] = r"C:\Users\Noor Tantawy\Downloads\hadoop\bin;" + os.environ["PATH"]
+os.environ["PYSPARK_PYTHON"] = r"C:\Users\Noor Tantawy\Downloads\ENVIRONMENT\.pyspark\Scripts\python.exe"
+os.environ["PYSPARK_DRIVER_PYTHON"] = r"C:\Users\Noor Tantawy\Downloads\ENVIRONMENT\.pyspark\Scripts\python.exe"
+
+# Only AFTER the above, import pyspark
+from pyspark.sql import SparkSession
 # explicitly point to project root regardless of where script is called from
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
 
 from config.schema import WEB_ACCESS_LOG_SCHEMA
-
-
-from config.schema import WEB_ACCESS_LOG_SCHEMA
-
-spark = SparkSession.builder \
-    .appName("LogAnomalyDetectionForApplications") \
-    .master("local[*]") \
-    .config("spark.driver.memory", "4g") \
-    .config("spark.executor.memory", "4g") \
-    .config("spark.driver.maxResultSize", "2g") \
-    .config("spark.sql.shuffle.partitions", "200") \
-    .config("spark.driver.extraJavaOptions", "-Djava.security.manager=allow") \
-    .config("spark.executor.extraJavaOptions", "-Djava.security.manager=allow") \
-    .getOrCreate()
-
-spark.sparkContext.setLogLevel("WARN")
 
 # ══════════════════════════════════════════════════════════════
 # DATASET 1 — Apache Common Log Format (no referrer/user agent)
@@ -124,93 +116,59 @@ def validate_schema(df, name):
 # ══════════════════════════════════════════════════════════════
 # PARSE & CLEAN DATASET 1
 # ══════════════════════════════════════════════════════════════
-
-df_raw_1 = spark.read.text("/home/abdallah/Anomaly-Detection/Data/access_log.txt")
-
-df_parsed_1 = df_raw_1.select(
-    regexp_extract("value", LOG_PATTERN_BASIC, 1).alias("ip"),
-    regexp_extract("value", LOG_PATTERN_BASIC, 2).alias("timestamp_raw"),
-    regexp_extract("value", LOG_PATTERN_BASIC, 3).alias("method"),
-    regexp_extract("value", LOG_PATTERN_BASIC, 4).alias("endpoint"),
-    regexp_extract("value", LOG_PATTERN_BASIC, 5).cast("int").alias("status_code"),
-    regexp_extract("value", LOG_PATTERN_BASIC, 6).alias("bytes_raw"),
-    lit(None).cast("string").alias("user_agent"),  # not present in this format
-    lit(0).alias("is_bot"),                         # can't detect without user agent
-    lit("access_log").alias("source"),
-)
-
-df_clean_1 = clean(df_parsed_1)
-
+def run_preprocessing(spark, dataset1_path, dataset2_path):
+    """
+    Parses and merges both web server log datasets.
+    Returns the unified cleaned DataFrame (df_all).
+    """
+    df_raw_1   = spark.read.text(dataset1_path)
+    df_parsed_1 = df_raw_1.select(
+        regexp_extract("value", LOG_PATTERN_BASIC, 1).alias("ip"),
+        regexp_extract("value", LOG_PATTERN_BASIC, 2).alias("timestamp_raw"),
+        regexp_extract("value", LOG_PATTERN_BASIC, 3).alias("method"),
+        regexp_extract("value", LOG_PATTERN_BASIC, 4).alias("endpoint"),
+        regexp_extract("value", LOG_PATTERN_BASIC, 5).cast("int").alias("status_code"),
+        regexp_extract("value", LOG_PATTERN_BASIC, 6).alias("bytes_raw"),
+        lit(None).cast("string").alias("user_agent"),
+        lit(0).alias("is_bot"),
+        lit("access_log").alias("source"),
+    )
 # ══════════════════════════════════════════════════════════════
 # PARSE & CLEAN DATASET 2
 # ══════════════════════════════════════════════════════════════
-
-df_raw_2 = spark.read.text("/home/abdallah/Anomaly-Detection/Data/access.log")
-
-df_parsed_2 = df_raw_2.select(
-    regexp_extract("value", LOG_PATTERN_COMBINED, 1).alias("ip"),
-    regexp_extract("value", LOG_PATTERN_COMBINED, 2).alias("timestamp_raw"),
-    regexp_extract("value", LOG_PATTERN_COMBINED, 3).alias("method"),
-    regexp_extract("value", LOG_PATTERN_COMBINED, 4).alias("endpoint"),
-    regexp_extract("value", LOG_PATTERN_COMBINED, 5).cast("int").alias("status_code"),
-    regexp_extract("value", LOG_PATTERN_COMBINED, 6).alias("bytes_raw"),
-    regexp_extract("value", LOG_PATTERN_COMBINED, 8).alias("user_agent"),
-    lit("web_server_log").alias("source"),
-).withColumn(
-    "is_bot",
-    when(lower(col("user_agent")).rlike(BOT_KEYWORDS), 1).otherwise(0)
-)
-
-df_clean_2 = clean(df_parsed_2)
+    df_raw_2    = spark.read.text(dataset2_path)
+    df_parsed_2 = df_raw_2.select(
+        regexp_extract("value", LOG_PATTERN_COMBINED, 1).alias("ip"),
+        regexp_extract("value", LOG_PATTERN_COMBINED, 2).alias("timestamp_raw"),
+        regexp_extract("value", LOG_PATTERN_COMBINED, 3).alias("method"),
+        regexp_extract("value", LOG_PATTERN_COMBINED, 4).alias("endpoint"),
+        regexp_extract("value", LOG_PATTERN_COMBINED, 5).cast("int").alias("status_code"),
+        regexp_extract("value", LOG_PATTERN_COMBINED, 6).alias("bytes_raw"),
+        regexp_extract("value", LOG_PATTERN_COMBINED, 8).alias("user_agent"),
+        lit("web_server_log").alias("source"),
+    ).withColumn(
+        "is_bot",
+        when(lower(col("user_agent")).rlike(BOT_KEYWORDS), 1).otherwise(0)
+    )
+    df_clean_1 = clean(df_parsed_1)
+    df_clean_2 = clean(df_parsed_2)
+    df_all     = df_clean_1.unionByName(df_clean_2)
 
 # ══════════════════════════════════════════════════════════════
 # MERGE & VALIDATE
 # ══════════════════════════════════════════════════════════════
 
-df_all = df_clean_1.unionByName(df_clean_2)
-
-validate_schema(df_all, "df_all")
+    validate_schema(df_all, "df_all")
 
 # ── Sanity check ───────────────────────────────────────────
-total  = df_all.count()
-bots   = df_all.filter(col("is_bot")   == 1).count()
-errors = df_all.filter(col("is_error") == 1).count()
-nulls  = df_all.filter(col("timestamp").isNull()).count()
-
-print(f"Total rows    : {total}")
-print(f"Bot traffic   : {bots}  ({100*bots/total:.1f}%)")
-print(f"Error rows    : {errors}  ({100*errors/total:.1f}%)")
-print(f"Null timestamp: {nulls}  ({100*nulls/total:.1f}%)  ← should be near 0")
-
-df_all.printSchema()
-df_all.show(10, truncate=False)
-
-# check both sources are present
-df_all.groupBy("source").count().show()
-
-# show some rows specifically from dataset 2
-df_all.filter(col("source") == "web_server_log").show(10, truncate=False)
-
-# check both sources are present
-df_all.groupBy("source").count().show()
-
-# show some rows specifically from dataset 2
-df_all.filter(col("source") == "web_server_log").show(10, truncate=False)
-
-# ══════════════════════════════════════════════════════════════
-# STEP 1 — SANITY CHECKS
-# ══════════════════════════════════════════════════════════════
-
-print("=== Status Code Distribution ===")
-df_all.groupBy("status_code").count() \
-    .orderBy("count", ascending=False).show(20)
-
-print("=== Bot vs Human by Source ===")
-df_all.groupBy("is_bot", "source").count().show()
-
-print("=== Time Range ===")
-from pyspark.sql.functions import min, max
-df_all.select(
-    min("timestamp").alias("earliest"),
-    max("timestamp").alias("latest")
-).show()
+    total  = df_all.count()
+    bots   = df_all.filter(col("is_bot")   == 1).count()
+    errors = df_all.filter(col("is_error") == 1).count()
+    nulls  = df_all.filter(col("timestamp").isNull()).count()
+    print(f"Total rows    : {total:,}")
+    print(f"Bot traffic   : {bots:,}  ({100*bots/total:.1f}%)")
+    print(f"Error rows    : {errors:,}  ({100*errors/total:.1f}%)")
+    print(f"Null timestamp: {nulls:,}  ({100*nulls/total:.1f}%)")
+    
+    return df_all
+    

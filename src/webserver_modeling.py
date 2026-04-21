@@ -4,7 +4,6 @@ import os
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
 
-from src.webserver_feature_engineering import windowed
 from src.webserver_evaluation import (
     evaluate_supervised,
     evaluate_kmeans,
@@ -451,10 +450,9 @@ def run_model_training(windowed):
         "test_t":         test_t,
     }
 
+    windowed_sample = windowed \
+        .localCheckpoint()   # breaks the lineage — no Hadoop needed
 
-windowed_sample = windowed \
-    .localCheckpoint()   # breaks the lineage — no Hadoop needed
+    print("DEBUG sample count:", windowed_sample.count())
 
-print("DEBUG sample count:", windowed_sample.count())
-
-results = run_model_training(windowed_sample)   # pass full dataset
+    results = run_model_training(windowed_sample)   # pass full dataset
