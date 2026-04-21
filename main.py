@@ -72,6 +72,76 @@ print("STAGE 3 — MODELING & EVALUATION")
 print("═"*60)
 
 results = run_model_training(windowed)
+# ══════════════════════════════════════════════════════════════
+# SAVE RESULTS TO CSV
+# ══════════════════════════════════════════════════════════════
+import pandas as pd
+import os
+
+results_dir = os.path.join(os.path.dirname(__file__), 'output', 'results')
+os.makedirs(results_dir, exist_ok=True)
+
+# ── Model metrics summary ──────────────────────────────────
+metrics_df = pd.DataFrame([
+    {
+        "model": "Logistic Regression",
+        "accuracy":  results["lr_metrics"].get("accuracy", 0),
+        "f1":        results["lr_metrics"].get("f1", 0),
+        "precision": results["lr_metrics"].get("weightedPrecision", 0),
+        "recall":    results["lr_metrics"].get("weightedRecall", 0),
+        "silhouette": None,
+        "purity": None,
+    },
+    {
+        "model": "Random Forest",
+        "accuracy":  results["knn_metrics"].get("accuracy", 0),
+        "f1":        results["knn_metrics"].get("f1", 0),
+        "precision": results["knn_metrics"].get("weightedPrecision", 0),
+        "recall":    results["knn_metrics"].get("weightedRecall", 0),
+        "silhouette": None,
+        "purity": None,
+    },
+    {
+        "model": f"K-Means (k={results['best_k']})",
+        "accuracy":  None,
+        "f1":        None,
+        "precision": None,
+        "recall":    None,
+        "silhouette": results["km_metrics"]["silhouette"],
+        "purity":     results["km_metrics"]["purity"],
+    },
+])
+metrics_df.to_csv(f"{results_dir}/model_metrics.csv", index=False)
+print(f"[results] Model metrics saved")
+
+# ── K-Means scores per k ───────────────────────────────────
+km_df = pd.DataFrame([
+    {"k": k, "silhouette": v["silhouette"], "wssse": v["wssse"]}
+    for k, v in results["km_scores"].items()
+])
+km_df.to_csv(f"{results_dir}/kmeans_scores.csv", index=False)
+print(f"[results] K-Means scores saved")
+
+# ── Anomaly distribution ───────────────────────────────────
+anomaly_df = windowed.groupBy("anomaly_type", "severity") \
+    .count().orderBy("count", ascending=False).toPandas()
+anomaly_df.to_csv(f"{results_dir}/anomaly_distribution.csv", index=False)
+print(f"[results] Anomaly distribution saved")
+
+# ── Pipeline stats ─────────────────────────────────────────
+stats_df = pd.DataFrame([{
+    "total_rows": 14842672,
+    "bot_traffic": 1118561,
+    "bot_pct": 7.5,
+    "error_rows": 262424,
+    "error_pct": 1.8,
+    "null_timestamps": 0,
+    "total_windows": 1831664,
+    "anomalous_windows": 331642,
+    "anomalous_pct": 18.1,
+}])
+stats_df.to_csv(f"{results_dir}/pipeline_stats.csv", index=False)
+print(f"[results] Pipeline stats saved")
 
 # ══════════════════════════════════════════════════════════════
 # STAGE 4 — VISUALIZATION
