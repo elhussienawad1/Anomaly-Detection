@@ -37,14 +37,18 @@ def evaluate_supervised(model, test_transformed, label_names, model_name):
         metrics[metric] = val
         print(f"  [{model_name}] {metric:<22}: {val:.4f}")
 
-    # Per-class F1
-    print(f"\n  [{model_name}] Per-class F1:")
-    n_classes = len(label_names)
-    for i in range(n_classes):
-        ev.setMetricName("f1").setMetricLabel(float(i))
-        f1_i = ev.evaluate(preds)
-        name = label_names[i] if i < len(label_names) else f"class_{i}"
-        print(f"    {name:<20}: {f1_i:.4f}")
+    # Per-class F1 (computed manually from confusion matrix)
+    print(f"\n  [{model_name}] Per-class F1 (precision / recall / F1 per class):")
+    print(f"    {'Class':<20} {'TP':>7} {'FP':>7} {'FN':>7} {'Prec':>7} {'Rec':>7} {'F1':>7}")
+    print(f"    {'-'*62}")
+    for i, name in enumerate(label_names):
+        tp = preds.filter((col(LABEL_COL) == i) & (col("prediction") == i)).count()
+        fp = preds.filter((col(LABEL_COL) != i) & (col("prediction") == i)).count()
+        fn = preds.filter((col(LABEL_COL) == i) & (col("prediction") != i)).count()
+        prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        rec  = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1_i = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0.0
+        print(f"    {name:<20} {tp:>7} {fp:>7} {fn:>7} {prec:>7.4f} {rec:>7.4f} {f1_i:>7.4f}")
 
     # Confusion matrix
     print(f"\n  [{model_name}] Confusion matrix (label vs prediction count):")

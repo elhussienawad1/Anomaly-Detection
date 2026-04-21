@@ -449,10 +449,3 @@ def run_model_training(windowed):
         "best_k":         best_k,
         "test_t":         test_t,
     }
-
-    windowed_sample = windowed \
-        .localCheckpoint()   # breaks the lineage — no Hadoop needed
-
-    print("DEBUG sample count:", windowed_sample.count())
-
-    results = run_model_training(windowed_sample)   # pass full dataset
