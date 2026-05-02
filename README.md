@@ -63,3 +63,16 @@ src/webserver_modeling/      — ML models
 src/evaluawebserver_evaluation/  — metrics
 src/webserver_visualization/ — plots
 main.py          — entry point
+
+running instructions:
+
+# Linux 
+#run in terminal:
+# export DATASET_1="/media/sf_project/Anomaly-Detection/config/datasets/access_log.txt"
+# python main.py
+
+# Windows  — in PowerShell
+#activate environment
+# $env:DATASET_1="C:\Users\Noor Tantawy\Desktop\BigData\project\access_log.txt"
+# $env:DATASET_2="C:\Users\Noor Tantawy\Desktop\BigData\project\access.log"
+# python main.py

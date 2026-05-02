@@ -1,0 +1,10 @@
+anomaly_type,severity,count
+normal,low,1500022
+bot_traffic,low,129612
+scanning,low,115562
+high_error_rate,low,76240
+high_error_rate,medium,6953
+server_error,low,1408
+traffic_spike,low,1182
+server_error,medium,665
+traffic_spike,medium,20
