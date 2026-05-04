@@ -19,6 +19,8 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 from pyspark.sql import SparkSession
 
 from config.paths import DATASET_1, DATASET_2, MODELS_DIR, VISUALIZATIONS_DIR
+from config.sparkconfig import create_spark
+
 
 from src.webserver_preprocessing      import run_preprocessing
 from src.webserver_feature_engineering import run_feature_engineering
@@ -30,16 +32,9 @@ from src.webserver_visualization                import run_visualization
 # Only created once here — every other file receives spark
 # as a parameter instead of creating its own session.
 # ══════════════════════════════════════════════════════════════
-spark = SparkSession.builder \
-    .appName("LogAnomalyDetection") \
-    .master(os.environ.get("SPARK_MASTER")) \
-    .config("spark.driver.memory", "4g") \
-    .config("spark.executor.memory", "4g") \
-    .config("spark.driver.maxResultSize", "2g") \
-    .config("spark.sql.shuffle.partitions", "200") \
-    .getOrCreate()
-
+spark = create_spark()
 spark.sparkContext.setLogLevel("WARN")
+spark.conf.set("spark.cleaner.referenceTracking.cleanCheckpoints", "true")
 
 # ══════════════════════════════════════════════════════════════
 # STAGE 1 — PREPROCESSING
