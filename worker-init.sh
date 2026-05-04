@@ -72,20 +72,28 @@ echo "Master reachable"
 # =========================
 # COPY DATASET (adjust path if needed)
 # =========================
-echo "[5/6] Ensuring dataset directory..."
+echo "[5/6] Locating dataset on this machine..."
 
-sudo mkdir -p /data/logs
+DATASET_DIR="/data/logs"
+mkdir -p $DATASET_DIR
 
-if [ -f "$HOME/Desktop/Anomaly-Detection/config/datasets/access.log" ]; then
-  sudo cp $HOME/Desktop/Anomaly-Detection/config/datasets/access.log /data/logs/
+# find files dynamically
+ACCESS_LOG=$(find ~ -type f -name "access.log" 2>/dev/null | head -n 1)
+ACCESS_LOG_TXT=$(find ~ -type f -name "access_log.txt" 2>/dev/null | head -n 1)
+
+echo "Found access.log: $ACCESS_LOG"
+echo "Found access_log.txt: $ACCESS_LOG_TXT"
+
+# copy if found
+if [ ! -z "$ACCESS_LOG" ]; then
+    sudo cp "$ACCESS_LOG" "$DATASET_DIR/"
 fi
 
-if [ -f "$HOME/Desktop/Anomaly-Detection/config/datasets/access_log.txt" ]; then
-  sudo cp $HOME/Desktop/Anomaly-Detection/config/datasets/access_log.txt /data/logs/
+if [ ! -z "$ACCESS_LOG_TXT" ]; then
+    sudo cp "$ACCESS_LOG_TXT" "$DATASET_DIR/"
 fi
 
-echo "Dataset ready at /data/logs"
-
+echo "Dataset normalized to $DATASET_DIR"
 # =========================
 # SET WORKER RESOURCES
 # =========================
