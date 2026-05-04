@@ -4,12 +4,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from pyspark.sql.functions import regexp_extract, col, to_timestamp, when, lower, lit
 from config.schema import WEB_ACCESS_LOG_SCHEMA
 
-os.environ["JAVA_HOME"] = r"C:\Program Files\Java\jdk-17.0.18"
-os.environ["SPARK_HOME"] = r"C:\Users\Noor Tantawy\Downloads\spark_unzipped\spark-4.0.2-bin-hadoop3"
-os.environ["HADOOP_HOME"] = r"C:\Users\Noor Tantawy\Downloads\hadoop"
-os.environ["PATH"] = r"C:\Users\Noor Tantawy\Downloads\hadoop\bin;" + os.environ["PATH"]
-os.environ["PYSPARK_PYTHON"] = r"C:\Users\Noor Tantawy\Downloads\ENVIRONMENT\.pyspark\Scripts\python.exe"
-os.environ["PYSPARK_DRIVER_PYTHON"] = r"C:\Users\Noor Tantawy\Downloads\ENVIRONMENT\.pyspark\Scripts\python.exe"
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 # Only AFTER the above, import pyspark
 from pyspark.sql import SparkSession

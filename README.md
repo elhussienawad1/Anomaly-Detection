@@ -25,7 +25,7 @@ unzip archive.zip
 # run ipynb momken men anaconda aw vs code lazem tehotto kernel SparkEnv lama yes2alak 3aleha
 
 ---------------------------------------------------------------------------
-# Anomaly Detection in Large-Scale System Logs
+_&# Anomaly Detection in Large-Scale System Logs
 **Team 19 — CMPS451 Spring 2026**
 Abdallah ElMahdy | Noor Tantawy | George Ayman | Elhussien Awad
 

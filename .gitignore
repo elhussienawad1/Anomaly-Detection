@@ -3,3 +3,6 @@ Data/*
 __pycache__
 Data/
 *.log
+myenv/
+config/datasets/
+.env

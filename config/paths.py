@@ -1,24 +1,13 @@
 # config/paths.py
 import os
+from dotenv import load_dotenv
 
-# ── Each teammate sets their own paths here ────────────────
-# Do NOT commit personal paths — add paths.py to .gitignore
-# Copy paths_template.py and rename to paths.py locally
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
-DATASET_1 = os.environ.get(
-    "DATASET_1",
-    "config/datasets/access_log.txt"          # default (Linux/Abdallah)
-)
-
-DATASET_2 = os.environ.get(
-    "DATASET_2",
-    "config/datasets/web_server_access_log.txt"
-)
-
-OUTPUT_DIR       = os.path.join(os.path.dirname(__file__), '..', 'output')
-MODELS_DIR       = os.path.join(OUTPUT_DIR, 'models')
-VISUALIZATIONS_DIR = os.path.join(OUTPUT_DIR, 'visualizations')
-
+DATASET_1          = os.environ["DATASET_1"]
+DATASET_2          = os.environ["DATASET_2"]
+MODELS_DIR         = os.environ.get("MODELS_DIR",         os.path.join(os.path.dirname(__file__), '..', 'output', 'models'))
+VISUALIZATIONS_DIR = os.environ.get("VISUALIZATIONS_DIR", os.path.join(os.path.dirname(__file__), '..', 'output', 'visualizations'))
 # Linux 
 #run in terminal:
 # export DATASET_1="/media/sf_project/Anomaly-Detection/config/datasets/access_log.txt"

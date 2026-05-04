@@ -2,11 +2,22 @@
 
 import sys
 import os
+from dotenv import load_dotenv
 
-# ── make project root importable ──────────────────────────
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+
+# Prepend Hadoop bin to PATH if HADOOP_HOME is set
+if os.environ.get("HADOOP_HOME"):
+    os.environ["PATH"] = os.path.join(os.environ["HADOOP_HOME"], "bin") + os.pathsep + os.environ["PATH"]
+os.environ["PATH"] = os.path.join(os.environ["SPARK_HOME"], "bin") + os.pathsep + os.environ["PATH"]
+
+JAVA_HOME = os.environ.get("JAVA_HOME")
+
+
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from pyspark.sql import SparkSession
+
 from config.paths import DATASET_1, DATASET_2, MODELS_DIR, VISUALIZATIONS_DIR
 
 from src.webserver_preprocessing      import run_preprocessing
@@ -21,7 +32,7 @@ from src.webserver_visualization                import run_visualization
 # ══════════════════════════════════════════════════════════════
 spark = SparkSession.builder \
     .appName("LogAnomalyDetection") \
-    .master("local[*]") \
+    .master(os.environ.get("SPARK_MASTER")) \
     .config("spark.driver.memory", "4g") \
     .config("spark.executor.memory", "4g") \
     .config("spark.driver.maxResultSize", "2g") \
